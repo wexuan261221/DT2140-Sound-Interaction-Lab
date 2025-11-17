@@ -1,21 +1,15 @@
 //==========================================================================================
 // AUDIO SETUP
-//------------------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------------------
-// Edit just where you're asked to!
-//------------------------------------------------------------------------------------------
-//
 //==========================================================================================
 let dspNode = null;
 let dspNodeParams = null;
 let jsonParams = null;
 
-// Change here to ("tuono") depending on your wasm file name
-const dspName = "bells";
+// Name must match wasm/js prefix — all lowercase in your case
+const dspName = "churchbell";
 const instance = new FaustWasm2ScriptProcessor(dspName);
 
-// output to window or npm package module
+// Export for browser
 if (typeof module === "undefined") {
     window[dspName] = instance;
 } else {
@@ -24,43 +18,29 @@ if (typeof module === "undefined") {
     module.exports = exp;
 }
 
-// The name should be the same as the WASM file, so change tuono with brass if you use brass.wasm
-bells.createDSP(audioContext, 1024)
+// Load the DSP — must match your lowercase module name
+churchbell.createDSP(audioContext, 1024)
     .then(node => {
         dspNode = node;
         dspNode.connect(audioContext.destination);
-        console.log('params: ', dspNode.getParams());
+
+        console.log("params:", dspNode.getParams());
         const jsonString = dspNode.getJSON();
         jsonParams = JSON.parse(jsonString)["ui"][0]["items"];
-        dspNodeParams = jsonParams
-        // const exampleMinMaxParam = findByAddress(dspNodeParams, "/thunder/rumble");
-        // // ALWAYS PAY ATTENTION TO MIN AND MAX, ELSE YOU MAY GET REALLY HIGH VOLUMES FROM YOUR SPEAKERS
-        // const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
-        // console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
+        dspNodeParams = jsonParams;
     });
 
 
 //==========================================================================================
 // INTERACTIONS
-//------------------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------------------
-// Edit the next functions to create interactions
-// Decide which parameters you're using and then use playAudio to play the Audio
-//------------------------------------------------------------------------------------------
-//
 //==========================================================================================
 
-function accelerationChange(accx, accy, accz) {
-    // playAudio()
-}
+function accelerationChange(accx, accy, accz) {}
 
-function rotationChange(rotx, roty, rotz) {
-}
+function rotationChange(rotx, roty, rotz) {}
 
 function mousePressed() {
-    // playAudio()
-    // Use this for debugging from the desktop!
+    playAudio();
 }
 
 function deviceMoved() {
@@ -71,39 +51,37 @@ function deviceMoved() {
 function deviceTurned() {
     threshVals[1] = turnAxis;
 }
+
 function deviceShaken() {
     shaketimer = millis();
     statusLabels[0].style("color", "pink");
-    playAudio();
+    playAudio();   // shake → bell
 }
 
 function getMinMaxParam(address) {
-    const exampleMinMaxParam = findByAddress(dspNodeParams, address);
-    // ALWAYS PAY ATTENTION TO MIN AND MAX, ELSE YOU MAY GET REALLY HIGH VOLUMES FROM YOUR SPEAKERS
-    const [exampleMinValue, exampleMaxValue] = getParamMinMax(exampleMinMaxParam);
-    console.log('Min value:', exampleMinValue, 'Max value:', exampleMaxValue);
-    return [exampleMinValue, exampleMaxValue]
+    const p = findByAddress(dspNodeParams, address);
+    const [mn, mx] = getParamMinMax(p);
+    console.log("Min:", mn, "Max:", mx);
+    return [mn, mx];
 }
+
 
 //==========================================================================================
 // AUDIO INTERACTION
-//------------------------------------------------------------------------------------------
-//
-//------------------------------------------------------------------------------------------
-// Edit here to define your audio controls 
-//------------------------------------------------------------------------------------------
-//
 //==========================================================================================
 
 function playAudio() {
-    if (!dspNode) {
-        return;
-    }
-    if (audioContext.state === 'suspended') {
-        return;
-    }
-    dspNode.setParamValue("/englishBell/gate", 1)
-    setTimeout(() => { dspNode.setParamValue("/englishBell/gate", 0) }, 100);
+    if (!dspNode) return;
+    if (audioContext.state === "suspended") return;
+
+    // IMPORTANT:
+    // check console.log(params) to confirm exact parameter path
+    // likely: "/churchbell/gate"
+    dspNode.setParamValue("/churchbell/gate", 1);
+
+    setTimeout(() => {
+        dspNode.setParamValue("/churchbell/gate", 0);
+    }, 120);
 }
 
 //==========================================================================================
